@@ -92,17 +92,18 @@ class Game:
         return self.add(pnt[deg].multiply(alpha), self.get_point(pnt, alpha, deg - 1).multiply(1 - alpha))
 
     def display_help(self):
+
         self.gameDisplay.fill((50, 50, 50))
         font1 = pygame.font.SysFont("arial", 30)
         font2 = pygame.font.SysFont("serif", 30)
         data = []
-        data.append(["F1", "РџРѕРјРѕС‰СЊ"])
-        data.append(["R", "РџРµСЂРµР·Р°РїСѓСЃРє"])
-        data.append(["P", "Р’РѕСЃРїСЂРѕРёР·РІРµСЃС‚Рё / РџР°СѓР·Р°"])
-        data.append(["Num+", "Р”РѕР±Р°РІРёС‚СЊ С‚РѕС‡РєСѓ"])
-        data.append(["Num-", "РЈРґР°Р»РёС‚СЊ С‚РѕС‡РєСѓ"])
+        data.append(["F1", "Помощь"])
+        data.append(["R", "Перезапуск"])
+        data.append(["P", "Перезапустить/пауза"])
+        data.append(["Num+", "Добавить точку"])
+        data.append(["Num-", "Удалить точку"])
         data.append(["", ""])
-        data.append([str(self.steps), "С‚РµРєСѓС‰РёС… С‚РѕС‡РµРє"])
+        data.append([str(self.steps), "текущих точек"])
 
         pygame.draw.lines(self.gameDisplay, (255, 50, 50, 255), True, [
             (0, 0), (800, 0), (800, 600), (0, 600)], 5)
@@ -154,6 +155,7 @@ class Game:
         pygame.display.quit()
         pygame.quit()
         exit(0)
+
 
 game = Game()
 game.running()
