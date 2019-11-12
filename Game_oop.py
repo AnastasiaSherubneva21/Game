@@ -1,5 +1,5 @@
 import pygame
-from random import random
+from random import random, randint
 from math import sqrt
 
 
@@ -9,73 +9,81 @@ class Vector:
         self.x = x
         self.y = y
 
-    def length(self):
+    def __add__(self, another_vector):
+        new_vector = Vector(self.x + another_vector.x, self.y + another_vector.y)
+        return new_vector
+
+    def __sub__(self, another_vector):
+        new_vector = Vector(self.x - another_vector.x, self.y - another_vector.y)
+        return new_vector
+
+    def len(self):
         return sqrt(self.x**2 + self.y**2)
 
-    def multiply(self, k):
+    def __mul__(self, k):
         v = Vector(self.x*k, self.y*k)
         return v
 
+    def int_pair(self):
+        tpl = (int(self.x), int(self.y))
+        return tpl
 
-class Game:
 
-    def __init__(self):
+class Line:
 
-        self.steps = 20
-        self.working = True
+    def __init__(self, screen_size, game_display):
+        self.steps = 0
         self.points = []
         self.speeds = []
-        self.show_help = False
-        self.pause = False
         self.color_param = 0
         self.color = pygame.Color(0)
-        self.SCREEN_SIZE = (1280, 720)
+        self.SCREEN_SIZE = screen_size
+        self.gameDisplay = game_display
 
-        pygame.init()
-        self.gameDisplay = pygame.display.set_mode(self.SCREEN_SIZE)
-        pygame.display.set_caption("Screen Saver")
+    def add_point(self):
+        x = randint(0, self.SCREEN_SIZE[0])
+        y = randint(0, self.SCREEN_SIZE[1])
+        self.points.append(Vector(x, y))
+        self.speeds.append(Vector(random()*2, random()*2))
+        self.steps += 1
 
-    def sub(self, v1, v2):
-        return Vector(v1.x - v2.x, v1.y - v2.y)
-
-    def vector(self, v1, v2):
-        return self.sub(v2, v1)
-
-    def add(self, v1, v2):
-        v = Vector(v1.x+v2.x, v1.y+v2.y)
-        return v
-
-    def draw_points(self, points, style="points", width=4, color=(255, 255, 255)):
-        if style == "line":
-            for point_number in range(-1, len(points) - 1):
-                pygame.draw.line(self.gameDisplay, color, (int(points[point_number].x), int(points[point_number].y)),
-                                 (int(points[point_number + 1].x), int(points[point_number + 1].y)), width)
-
-        elif style == "points":
-            for point in points:
-                pygame.draw.circle(self.gameDisplay, color,
-                                   (int(point.x), int(point.y)), width)
-
-    def get_joint(self):
-        if len(self.points) < 3:
-            return []
-        result = []
-        for i in range(-2, len(self.points) - 2):
-            pnt = []
-            pnt.append((self.add(self.points[i], self.points[i + 1])).multiply(0.5))
-            pnt.append(self.points[i + 1])
-            pnt.append((self.add(self.points[i + 1], self.points[i + 2])).multiply(0.5))
-
-            result.extend(self.get_points(pnt))
-        return result
+    def remove_point(self):
+        self.points = self.points[:-1]
+        self.speeds = self.speeds[:-1]
+        self.steps -= 1
 
     def set_points(self):
         for point in range(len(self.points)):
-            self.points[point] = self.add(self.points[point], self.speeds[point])
+            self.points[point] = self.points[point].__add__(self.speeds[point])
             if self.points[point].x > self.SCREEN_SIZE[0] or self.points[point].x < 0:
                 self.speeds[point] = Vector(- self.speeds[point].x, self.speeds[point].y)
             if self.points[point].y > self.SCREEN_SIZE[1] or self.points[point].y < 0:
                 self.speeds[point] = Vector(self.speeds[point].x, -self.speeds[point].y)
+
+    def draw_points(self, points, style="points", width=4, color=(255, 255, 255)):
+        if style == "line":
+            for point_number in range(-1, len(points) - 1):
+                pygame.draw.line(self.gameDisplay, color, points[point_number].int_pair(),
+                                 points[point_number + 1].int_pair(), width)
+
+        elif style == "points":
+            for point in points:
+                pygame.draw.circle(self.gameDisplay, self.color,
+                                   point.int_pair(), width)
+
+    def raise_speed(self):
+        new_speeds = []
+        for i in range(len(self.speeds)):
+            vx, vy = self.speeds[i].x, self.speeds[i].y
+            new_speeds.append(Vector(vx*2, vy*2))
+        self.speeds = new_speeds
+
+    def refuse_speed(self):
+        new_speeds = []
+        for i in range(len(self.speeds)):
+            vx, vy = self.speeds[i].x, self.speeds[i].y
+            new_speeds.append(Vector(vx/2, vy/2))
+        self.speeds = new_speeds
 
     def get_points(self, pnt):
         alpha = 1 / self.steps
@@ -89,7 +97,58 @@ class Game:
             deg = len(pnt) - 1
         if deg == 0:
             return pnt[0]
-        return self.add(pnt[deg].multiply(alpha), self.get_point(pnt, alpha, deg - 1).multiply(1 - alpha))
+        return (self.get_point(pnt, alpha, deg - 1).__mul__(1 - alpha)).__add__(pnt[deg].__mul__(alpha))
+
+    def get_joint(self):
+        if len(self.points) < 3:
+            return []
+        result = []
+        for i in range(-2, len(self.points) - 2):
+            pnt = []
+            pnt.append((self.points[i].__add__(self.points[i + 1])).__mul__(0.5))
+            pnt.append(self.points[i + 1])
+            pnt.append((self.points[i + 1].__add__(self.points[i + 2])).__mul__(0.5))
+            result.extend(self.get_points(pnt))
+        return result
+
+
+class Joint(Line):
+
+    def add_point(self):
+        x = randint(0, self.SCREEN_SIZE[0])
+        y = randint(0, self.SCREEN_SIZE[1])
+        self.points.append(Vector(x, y))
+        self.speeds.append(Vector(random() * 2, random() * 2))
+        self.steps += 1
+        self.draw_points(self.get_joint(), "line", 4, self.color)
+
+    def set_points(self):
+        for point in range(len(self.points)):
+            self.points[point] = self.points[point].__add__(self.speeds[point])
+            if self.points[point].x > self.SCREEN_SIZE[0] or self.points[point].x < 0:
+                self.speeds[point] = Vector(- self.speeds[point].x, self.speeds[point].y)
+            if self.points[point].y > self.SCREEN_SIZE[1] or self.points[point].y < 0:
+                self.speeds[point] = Vector(self.speeds[point].x, -self.speeds[point].y)
+        self.draw_points(self.get_joint(), "line", 4, self.color)
+
+
+class Game:
+
+    def __init__(self):
+
+        self.SCREEN_SIZE = (1280, 720)
+        self.gameDisplay = pygame.display.set_mode(self.SCREEN_SIZE)
+        self.joint = Joint(self.SCREEN_SIZE, self.gameDisplay)
+        self.working = True
+        self.show_help = False
+        self.pause = False
+
+        pygame.init()
+        self.gameDisplay = pygame.display.set_mode(self.SCREEN_SIZE)
+        pygame.display.set_caption("Screen Saver")
+
+    def len(self, vector):
+        return sqrt(vector.x ** 2 + vector.y ** 2)
 
     def display_help(self):
 
@@ -103,7 +162,7 @@ class Game:
         data.append(["Num+", "Добавить точку"])
         data.append(["Num-", "Удалить точку"])
         data.append(["", ""])
-        data.append([str(self.steps), "текущих точек"])
+        data.append([str(self.joint.steps), "текущих точек"])
 
         pygame.draw.lines(self.gameDisplay, (255, 50, 50, 255), True, [
             (0, 0), (800, 0), (800, 600), (0, 600)], 5)
@@ -123,30 +182,37 @@ class Game:
                     if event.key == pygame.K_ESCAPE:
                         self.working = False
                     if event.key == pygame.K_r:
-                        self.points = []
-                        self.speeds = []
+                        self.joint.points = []
+                        self.joint.speeds = []
+                        self.joint.steps = 0
                     if event.key == pygame.K_p:
                         self.pause = not self.pause
+                    if event.key == pygame.K_h:
+                        self.joint.raise_speed()
+                    if event.key == pygame.K_l:
+                        self.joint.refuse_speed()
                     if event.key == pygame.K_KP_PLUS:
-                        self.steps += 1
+                        self.joint.add_point()
                     if event.key == pygame.K_F1:
                         self.show_help = not self.show_help
                     if event.key == pygame.K_KP_MINUS:
-                        self.steps -= 1 if self.steps > 1 else 0
+                        if self.joint.steps > 1:
+                            self.joint.remove_point()
 
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     v = Vector(event.pos[0], event.pos[1])
-                    self.points.append(v)
+                    self.joint.points.append(v)
                     s = Vector(random()*2, random()*2)
-                    self.speeds.append(s)
+                    self.joint.speeds.append(s)
+                    self.joint.steps += 1
 
             self.gameDisplay.fill((0, 0, 0))
-            self.color_param = (self.color_param + 1) % 360
-            self.color.hsla = (self.color_param, 100, 50, 100)
-            self.draw_points(self.points)
-            self.draw_points(self.get_joint(), "line", 4, self.color)
+            self.joint.color_param = (self.joint.color_param + 1) % 360
+            self.joint.color.hsla = (self.joint.color_param, 100, 50, 100)
+            self.joint.draw_points(self.joint.points)
+            self.joint.draw_points(self.joint.get_joint(), "line", 4, self.joint.color)
             if not self.pause:
-                self.set_points()
+                self.joint.set_points()
             if self.show_help:
                 self.display_help()
 
