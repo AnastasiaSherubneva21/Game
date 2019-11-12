@@ -32,7 +32,7 @@ class Vector:
 class Line:
 
     def __init__(self, screen_size, game_display):
-        self.steps = 0
+        self.steps = 20
         self.points = []
         self.speeds = []
         self.color_param = 0
@@ -45,12 +45,10 @@ class Line:
         y = randint(0, self.SCREEN_SIZE[1])
         self.points.append(Vector(x, y))
         self.speeds.append(Vector(random()*2, random()*2))
-        self.steps += 1
 
     def remove_point(self):
         self.points = self.points[:-1]
         self.speeds = self.speeds[:-1]
-        self.steps -= 1
 
     def set_points(self):
         for point in range(len(self.points)):
@@ -119,7 +117,6 @@ class Joint(Line):
         y = randint(0, self.SCREEN_SIZE[1])
         self.points.append(Vector(x, y))
         self.speeds.append(Vector(random() * 2, random() * 2))
-        self.steps += 1
         self.draw_points(self.get_joint(), "line", 4, self.color)
 
     def set_points(self):
@@ -162,7 +159,7 @@ class Game:
         data.append(["Num+", "Добавить точку"])
         data.append(["Num-", "Удалить точку"])
         data.append(["", ""])
-        data.append([str(self.joint.steps), "текущих точек"])
+        data.append([str(len(self.joint.points)), "текущих точек"])
 
         pygame.draw.lines(self.gameDisplay, (255, 50, 50, 255), True, [
             (0, 0), (800, 0), (800, 600), (0, 600)], 5)
@@ -191,20 +188,24 @@ class Game:
                         self.joint.raise_speed()
                     if event.key == pygame.K_l:
                         self.joint.refuse_speed()
-                    if event.key == pygame.K_KP_PLUS:
+                    if event.key == pygame.K_a:
                         self.joint.add_point()
+                    if event.key == pygame.K_d:
+                        if len(self.joint.points) >= 1:
+                            self.joint.remove_point()
+                    if event.key == pygame.K_KP_PLUS:
+                        self.joint.steps += 1
                     if event.key == pygame.K_F1:
                         self.show_help = not self.show_help
                     if event.key == pygame.K_KP_MINUS:
                         if self.joint.steps > 1:
-                            self.joint.remove_point()
+                            self.joint.steps -= 1
 
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     v = Vector(event.pos[0], event.pos[1])
                     self.joint.points.append(v)
                     s = Vector(random()*2, random()*2)
                     self.joint.speeds.append(s)
-                    self.joint.steps += 1
 
             self.gameDisplay.fill((0, 0, 0))
             self.joint.color_param = (self.joint.color_param + 1) % 360
